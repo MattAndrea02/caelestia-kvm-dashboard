@@ -32,8 +32,8 @@ def replace_once(text: str, old: str, new: str, name: str) -> str:
 def patches(source: Path) -> dict[Path, str]:
     """Keep the upstream adaptation in one place; never ship a fork of the shell."""
     content = (source / CONTENT).read_text()
-    if "vmComponent" in content:
-        raise ValueError("The source already includes a VM tab; use an unmodified Caelestia source")
+    if "vmComponent" in content or "kubeComponent" in content:
+        raise ValueError("The source already includes monitoring tabs; use an unmodified Caelestia source")
     content = replace_once(content, 'import QtQuick\n', 'import "vms"\nimport QtQuick\n', str(CONTENT))
     content = replace_once(content,
         '                enabled: Config.dashboard.showWeather\n            }',
@@ -43,12 +43,24 @@ def patches(source: Path) -> dict[Path, str]:
         '                iconName: "dns",\n'
         '                text: "VMs",\n'
         '                enabled: true\n'
+        '            },\n'
+        '            {\n'
+        '                component: kubeComponent,\n'
+        '                iconName: "hub",\n'
+        '                text: "Kubernetes",\n'
+        '                enabled: true\n'
         '            }', str(CONTENT))
     content = replace_once(content, '            Behavior on contentX {',
         '            Component {\n'
         '                id: vmComponent\n\n'
         '                VmTab {\n'
         '                    active: root.screenState.dashboard && root.dashboardTabs[root.screenState.dashboardTab]?.component === vmComponent\n'
+        '                }\n'
+        '            }\n\n'
+        '            Component {\n'
+        '                id: kubeComponent\n\n'
+        '                KubeTab {\n'
+        '                    active: root.screenState.dashboard && root.dashboardTabs[root.screenState.dashboardTab]?.component === kubeComponent\n'
         '                }\n'
         '            }\n\n'
         '            Behavior on contentX {', str(CONTENT))
@@ -59,6 +71,12 @@ def patches(source: Path) -> dict[Path, str]:
         '            description: "Libvirt connections, SSH, monitoring",\n'
         '            category: "shell"\n'
         '        },\n\n'
+        '        {\n'
+        '            label: "Kubernetes",\n'
+        '            icon: "hub",\n'
+        '            description: "Cluster connection and health monitoring",\n'
+        '            category: "shell"\n'
+        '        },\n\n'
         '        // About\n', str(PAGE_REGISTRY))
     components = replace_once((source / PAGE_COMPONENTS).read_text(), 'import QtQuick\n',
         'import qs.modules.dashboard.vms\nimport QtQuick\n', str(PAGE_COMPONENTS))
@@ -66,6 +84,11 @@ def patches(source: Path) -> dict[Path, str]:
         '        Component {\n'
         '            StackPage {\n'
         '                Component { VmSettingsPage {} }\n'
+        '            }\n'
+        '        },\n\n'
+        '        Component {\n'
+        '            StackPage {\n'
+        '                Component { KubeSettingsPage {} }\n'
         '            }\n'
         '        },\n\n'
         '        // About\n', str(PAGE_COMPONENTS))
@@ -205,6 +228,8 @@ def main() -> int:
         if args.action == "check":
             check(source, target)
             print(f"Compatible Caelestia source: {source}\nTarget: {target}\nExisting dependencies available. No changes made.")
+            if not shutil.which("kubectl"):
+                print("Optional Kubernetes monitoring: install kubectl and configure a kubeconfig to connect.")
         elif args.action == "install":
             install(source, target)
         else:

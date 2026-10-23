@@ -12,6 +12,7 @@ Singleton {
     property bool ready: false
     property string error: ""
     property bool queued: false
+    readonly property bool saving: queued || writer.running
 
     function reload(): void {
         if (!reader.running && !writer.running && !queued)
@@ -33,6 +34,15 @@ Singleton {
         } else {
             next.ssh[key] = value;
         }
+        commit(next);
+    }
+
+    function setKubernetes(key: string, value: var): void {
+        const next = JSON.parse(JSON.stringify(data));
+        next.kubernetes = Object.assign({}, next.kubernetes || {}, {[key]: value});
+        // A context belongs to its kubeconfig, not merely to a display name.
+        if (key === "kubeconfig" && value !== data.kubernetes?.kubeconfig)
+            next.kubernetes.context = "";
         commit(next);
     }
 

@@ -12,5 +12,11 @@
     "timeout": 10,
     "identity_file": ""
   },
-  "machines": {}
+  "machines": {},
+  "kubernetes": {
+    "enabled": false,
+    "kubeconfig": "",
+    "context": "",
+    "interval": 10
+  }
 }

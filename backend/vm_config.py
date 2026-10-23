@@ -15,6 +15,7 @@ DEFAULTS = {
     "uris": URIS, "interval": 3, "startup_seconds": 10, "arp_fallback": True,
     "ssh": {"username": "", "port": 22, "timeout": 10, "identity_file": ""},
     "machines": {},
+    "kubernetes": {"enabled": False, "kubeconfig": "", "context": "", "interval": 10},
 }
 
 
@@ -65,6 +66,19 @@ def normalize(data: dict) -> dict:
         raise ValueError("VM connection profiles must be an object")
     for profile in config["machines"].values():
         validate_ssh(profile, profile=True)
+    options = config["kubernetes"]
+    if not isinstance(options, dict) or options.keys() - DEFAULTS["kubernetes"].keys():
+        raise ValueError("Invalid Kubernetes settings")
+    options = {**DEFAULTS["kubernetes"], **options}
+    if not isinstance(options["enabled"], bool):
+        raise ValueError("Kubernetes monitoring must be true or false")
+    for key in ("kubeconfig", "context"):
+        if not isinstance(options[key], str) or any(ord(c) < 32 for c in options[key]):
+            raise ValueError(f"Invalid Kubernetes {key}")
+    number(options["interval"], "Kubernetes refresh interval", 5, 60)
+    if int(options["interval"]) != options["interval"]:
+        raise ValueError("Kubernetes refresh interval must be an integer")
+    config["kubernetes"] = options
     return config
 
 

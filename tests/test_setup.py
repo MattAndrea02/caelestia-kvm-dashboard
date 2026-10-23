@@ -41,6 +41,11 @@ class InstallTests(unittest.TestCase):
         self.assertTrue((self.target / "untouched.txt").is_symlink())
         self.assertFalse((self.target / "shell.qml").is_symlink())
         self.assertIn('text: "VMs"', (self.target / setup.CONTENT).read_text())
+        self.assertEqual((self.target / setup.CONTENT).read_text().count('text: "Kubernetes"'), 1)
+        self.assertIn("KubeSettingsPage", (self.target / setup.PAGE_COMPONENTS).read_text())
+        self.assertIn('label: "Kubernetes"', (self.target / setup.PAGE_REGISTRY).read_text())
+        self.assertTrue((self.target / "modules/dashboard/vms/kube_monitor.py").is_file())
+        self.assertTrue((self.target / "modules/dashboard/vms/KubeTab.qml").is_file())
         setup.verify_owned(self.target)  # The same check guards uninstall.
 
     def test_unmanaged_config_and_local_edits_are_preserved(self):

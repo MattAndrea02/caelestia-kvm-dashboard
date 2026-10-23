@@ -6,6 +6,23 @@ from support import config, ssh
 
 
 class ConfigTests(unittest.TestCase):
+    def test_kubernetes_is_optional_and_preserves_vm_settings(self):
+        old = {"ssh": {"username": "master"}, "machines": {"vm": {"host": "node.local"}}}
+        data = config.normalize(old)
+        self.assertFalse(data["kubernetes"]["enabled"])
+        self.assertEqual(data["kubernetes"]["interval"], 10)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.json"
+            config.save({**old, "kubernetes": {"context": "lab", "enabled": True}}, path)
+            result = config.load(path)
+        self.assertEqual(result["ssh"]["username"], "master")
+        self.assertEqual(result["machines"], old["machines"])
+        self.assertEqual(result["kubernetes"]["context"], "lab")
+        for options in ([], {"enabled": 1}, {"interval": 4}, {"interval": 61}, {"interval": 5.5},
+                        {"interval": True}, {"context": "lab\n"}, {"kubeconfig": None}, {"token": "secret"}):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                config.normalize({"kubernetes": options})
+
     def test_atomic_save_roundtrip_and_private_permissions(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "nested/config.json"
