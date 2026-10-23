@@ -1,0 +1,16 @@
+{
+  "uris": [
+    "qemu:///system",
+    "qemu:///session"
+  ],
+  "interval": 3,
+  "startup_seconds": 10,
+  "arp_fallback": true,
+  "ssh": {
+    "username": "",
+    "port": 22,
+    "timeout": 10,
+    "identity_file": ""
+  },
+  "machines": {}
+}
